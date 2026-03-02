@@ -1,5 +1,7 @@
-import { X, Minus, Plus, ShoppingBag } from "lucide-react";
+import { useState } from "react";
+import { X, Minus, Plus, ShoppingBag, Loader2 } from "lucide-react";
 import { CartItem } from "@/types/product";
+import { initiateRazorpayCheckout } from "@/lib/razorpay";
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -11,7 +13,26 @@ interface CartDrawerProps {
 }
 
 const CartDrawer = ({ isOpen, onClose, items, totalPrice, onAdd, onRemove }: CartDrawerProps) => {
+  const [paying, setPaying] = useState(false);
+
   if (!isOpen) return null;
+
+  const handleCheckout = async () => {
+    setPaying(true);
+    await initiateRazorpayCheckout({
+      amount: totalPrice,
+      onSuccess: (response) => {
+        setPaying(false);
+        alert(`Payment successful! ID: ${response.razorpay_payment_id}`);
+        onClose();
+      },
+      onError: (error) => {
+        setPaying(false);
+        alert(`Payment failed: ${error}`);
+      },
+    });
+    setPaying(false);
+  };
 
   return (
     <>
@@ -73,8 +94,13 @@ const CartDrawer = ({ isOpen, onClose, items, totalPrice, onAdd, onRemove }: Car
               <span>Total</span>
               <span>₹{totalPrice}</span>
             </div>
-            <button className="w-full gradient-brand text-primary-foreground py-3.5 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity active:scale-[0.98]">
-              Proceed to Checkout
+            <button
+              onClick={handleCheckout}
+              disabled={paying}
+              className="w-full gradient-brand text-primary-foreground py-3.5 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity active:scale-[0.98] disabled:opacity-60 flex items-center justify-center gap-2"
+            >
+              {paying && <Loader2 className="h-4 w-4 animate-spin" />}
+              {paying ? "Processing..." : "Proceed to Checkout"}
             </button>
           </div>
         )}
