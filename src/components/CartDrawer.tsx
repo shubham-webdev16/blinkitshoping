@@ -1,7 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { X, Minus, Plus, ShoppingBag, Loader2 } from "lucide-react";
 import { CartItem } from "@/types/product";
 import { initiateRazorpayCheckout } from "@/lib/razorpay";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -10,25 +14,66 @@ interface CartDrawerProps {
   totalPrice: number;
   onAdd: (item: CartItem) => void;
   onRemove: (productId: number) => void;
+  onClearCart?: () => void;
 }
 
-const CartDrawer = ({ isOpen, onClose, items, totalPrice, onAdd, onRemove }: CartDrawerProps) => {
+const CartDrawer = ({ isOpen, onClose, items, totalPrice, onAdd, onRemove, onClearCart }: CartDrawerProps) => {
   const [paying, setPaying] = useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   if (!isOpen) return null;
 
+  const saveOrder = async (paymentId: string) => {
+    const orderNumber = `BLK${Date.now().toString(36).toUpperCase()}`;
+    const { data: order, error } = await supabase
+      .from("orders")
+      .insert({
+        user_id: user!.id,
+        order_number: orderNumber,
+        total_amount: totalPrice,
+        payment_id: paymentId,
+        status: "placed",
+      })
+      .select("id")
+      .single();
+
+    if (error || !order) return null;
+
+    const orderItems = items.map((item) => ({
+      order_id: order.id,
+      product_name: item.title,
+      product_image: item.image,
+      quantity: item.quantity,
+      price: item.price,
+    }));
+
+    await supabase.from("order_items").insert(orderItems);
+    return order.id;
+  };
+
   const handleCheckout = async () => {
+    if (!user) {
+      toast.info("Please login first to place an order");
+      navigate("/auth");
+      onClose();
+      return;
+    }
+
     setPaying(true);
     await initiateRazorpayCheckout({
       amount: totalPrice,
-      onSuccess: (response) => {
+      onSuccess: async (response) => {
+        const orderId = await saveOrder(response.razorpay_payment_id);
         setPaying(false);
-        alert(`Payment successful! ID: ${response.razorpay_payment_id}`);
+        onClearCart?.();
+        toast.success("Order placed successfully! 🎉");
         onClose();
+        if (orderId) navigate(`/orders/${orderId}`);
       },
       onError: (error) => {
         setPaying(false);
-        alert(`Payment failed: ${error}`);
+        toast.error(`Payment failed: ${error}`);
       },
     });
     setPaying(false);
