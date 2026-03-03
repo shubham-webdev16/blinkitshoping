@@ -33,8 +33,10 @@ export function useCart() {
     [items]
   );
 
+  const clearCart = useCallback(() => setItems([]), []);
+
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
   const totalPrice = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
-  return { items, addToCart, removeFromCart, getQuantity, totalItems, totalPrice };
+  return { items, addToCart, removeFromCart, getQuantity, totalItems, totalPrice, clearCart };
 }
