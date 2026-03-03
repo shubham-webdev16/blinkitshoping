@@ -12,7 +12,7 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [cartOpen, setCartOpen] = useState(false);
-  const { items, addToCart, removeFromCart, getQuantity, totalItems, totalPrice } = useCart();
+  const { items, addToCart, removeFromCart, getQuantity, totalItems, totalPrice, clearCart } = useCart();
 
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
@@ -64,6 +64,7 @@ const Index = () => {
         totalPrice={totalPrice}
         onAdd={addToCart}
         onRemove={removeFromCart}
+        onClearCart={clearCart}
       />
     </div>
   );
