@@ -25,7 +25,8 @@ const CartDrawer = ({ isOpen, onClose, items, totalPrice, onAdd, onRemove, onCle
   if (!isOpen) return null;
 
   const saveOrder = async (paymentId: string) => {
-    const orderNumber = `BLK${Date.now().toString(36).toUpperCase()}`;
+    const randomPart = crypto.randomUUID().split('-')[0].toUpperCase();
+    const orderNumber = `BLK-${randomPart}`;
     const { data: order, error } = await supabase
       .from("orders")
       .insert({
