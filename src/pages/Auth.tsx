@@ -21,7 +21,7 @@ const Auth = () => {
     if (isLogin) {
       const { error } = await signIn(email, password);
       if (error) {
-        toast.error(error.message);
+        toast.error("Invalid email or password. Please try again.");
       } else {
         toast.success("Login successful!");
         navigate("/");
@@ -29,7 +29,7 @@ const Auth = () => {
     } else {
       const { error } = await signUp(email, password, fullName);
       if (error) {
-        toast.error(error.message);
+        toast.error("Unable to create account. Please check your details and try again.");
       } else {
         toast.success("Account created! Please check your email to verify.");
       }
